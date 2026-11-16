@@ -1,0 +1,8 @@
+{
+  "name": "pausa-lee",
+  "version": "0.1.0",
+  "description": "/pausa escribe un handoff del hilo antes de una pausa larga para poder hacer /clear; /lee lo encuentra y retoma desde el siguiente paso.",
+  "author": { "name": "mendezorlando" },
+  "repository": "https://github.com/mendezorlando/pausa-lee",
+  "license": "MIT"
+}
