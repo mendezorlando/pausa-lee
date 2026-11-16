@@ -1,50 +1,50 @@
 # pausa-lee
 
-Dos comandos para Claude Code que permiten hacer `/clear` sin perder el hilo:
+Two Claude Code commands that let you `/clear` without losing the thread (*pausa* and *lee* are Spanish for "pause" and "read"):
 
-- **`/pausa [nombre]`:** antes de una pausa larga, escribe en el directorio de trabajo un *handoff*, `<título-de-la-conversación>-AAAA-MM-DD.md`. Lleva cinco secciones (Decidido, Tocado, A medias, Siguiente paso y No repetir) y unos 2k tokens como mucho.
-- **`/lee [palabra]`:** al volver, encuentra el handoff de este hilo por el título de la conversación, lo abre y sigue desde «Siguiente paso». Si no puede saber de qué hilo es, lista los que hay para que elijas y no adivina.
+- **`/pausa [name]`:** before a long pause, writes a *handoff* to the working directory, `<conversation-title>-YYYY-MM-DD.md`. It has five sections (Decided, Touched, In progress, Next step and Do not repeat) and about 2k tokens at most.
+- **`/lee [word]`:** when you come back, finds this thread's handoff by the conversation title, opens it and continues from «Next step». If it cannot tell which thread it is, it lists the handoffs for you to choose and does not guess.
 
-Por qué existe: la caché de Claude dura una hora. Al volver, el contexto que dejaste vivo se paga entero en cada llamada. Un handoff de 2k tokens retoma el hilo por una fracción.
+Why it exists: Claude's prompt cache lasts an hour. When you come back, the context you left alive is paid in full on every call. A 2k-token handoff resumes the thread for a fraction of that.
 
-## Instalación
-En una sesión de Claude Code en la terminal:
+## Install
+In a Claude Code session in the terminal:
 
 ```
 /plugin install pausa-lee --marketplace mendezorlando/pausa-lee
 ```
 
-Desde la terminal del sistema:
+From a shell:
 
 ```bash
 claude plugin install pausa-lee --marketplace mendezorlando/pausa-lee
 ```
 
-En la app de escritorio: + junto al cuadro del prompt → Plugins → Add marketplace con `mendezorlando/pausa-lee` → Add plugin.
+In the desktop app: + next to the prompt box → Plugins → Add marketplace with `mendezorlando/pausa-lee` → Add plugin.
 
-Los comandos se invocan como `/pausa` y `/lee`. Si otro comando ya usa uno de esos nombres, como `/pausa-lee:pausa` y `/pausa-lee:lee`.
+The commands are invoked as `/pausa` and `/lee`. If another command already uses one of those names, as `/pausa-lee:pausa` and `/pausa-lee:lee`.
 
-## Cómo funciona
-**`scripts/nombre-pausa.py`** saca el nombre del archivo del título de la conversación.
-- Identifica la sesión por `CLAUDE_CODE_SESSION_ID`. Si esa variable no está, sube por el árbol de procesos hasta `~/.claude/sessions/<pid>.json`.
-- Lee el título (`custom-title` o `ai-title`) en `~/.claude/projects/*/<sesión>.jsonl`.
-- Si un hilo ya tiene sus handoffs en una subcarpeta, escribe ahí.
-- Si no puede identificar la sesión, escribe `DESCONOCIDO` y no inventa nada.
+## How it works
+**`scripts/pause-name.py`** derives the file name from the conversation title.
+- It identifies the session by `CLAUDE_CODE_SESSION_ID`. If that variable is missing, it walks up the process tree to `~/.claude/sessions/<pid>.json`.
+- It reads the title (`custom-title` or `ai-title`) in `~/.claude/projects/*/<session>.jsonl`.
+- If a thread already keeps its handoffs in a subfolder, it writes there.
+- If it cannot identify the session, it prints `UNKNOWN` and makes nothing up.
 
-**`scripts/lista-handoffs.py`** busca los `.md` del directorio y de un nivel de subcarpetas.
-- Cuenta como handoff un `.md` que tenga al menos 4 de las 5 secciones.
-- Lo empareja con el hilo por el nombre o por el H1, y solo da la instrucción del caso que aplica. Así `/lee` gasta pocos tokens.
+**`scripts/list-handoffs.py`** looks for `.md` files in the directory and in one level of subfolders.
+- A `.md` counts as a handoff if it has at least 4 of the 5 sections.
+- It matches each one to the thread by its name or its H1, and prints only the instruction for the case that applies. That keeps `/lee` cheap in tokens.
 
-**`scripts/poda-handoffs.py`** deja dos handoffs por hilo: el vigente y el anterior.
-- Los demás no se borran: pasan a `papelera/`, junto a su archivo.
-- Si no se conoce el título, no poda nada.
+**`scripts/prune-handoffs.py`** keeps two handoffs per thread: the current one and the previous one.
+- The others are not deleted: they move to `trash/`, next to their file.
+- If the title is unknown, it prunes nothing.
 
-**`scripts/prueba-handoffs.py`** es la batería de regresión: `python3 scripts/prueba-handoffs.py`. Trabaja en carpetas temporales y con un `HOME` propio.
+**`scripts/test-handoffs.py`** is the regression suite: `python3 scripts/test-handoffs.py`. It works in temporary folders and with a `HOME` of its own.
 
-## Requisitos y límites
-- Python 3, sin dependencias. Funciona en macOS y en Linux, porque usa `ps` para subir por el árbol de procesos.
-- Lee archivos internos de Claude Code: el transcript `.jsonl` y `~/.claude/sessions`. Si una versión futura cambia ese formato, el emparejamiento puede dejar de funcionar. En ese caso `/lee` lista los handoffs en vez de abrir uno.
-- Si renombras la conversación, al emparejador le cuesta más reconocer el hilo. El siguiente `/pausa` lo vuelve a poner al día.
+## Requirements and limits
+- Python 3, no dependencies. Works on macOS and Linux, because it uses `ps` to walk up the process tree.
+- It reads Claude Code's internal files: the `.jsonl` transcript and `~/.claude/sessions`. If a future version changes that format, matching may stop working. In that case `/lee` lists the handoffs instead of opening one.
+- If you rename the conversation, the matcher has a harder time recognizing the thread. The next `/pausa` brings it back in sync.
 
-## Licencia
+## License
 MIT.

@@ -1,6 +1,6 @@
 {
   "name": "pausa-lee",
   "owner": { "name": "mendezorlando" },
-  "description": "Handoffs para retomar un hilo de Claude Code tras /clear.",
+  "description": "Handoffs to resume a Claude Code thread after /clear.",
   "plugins": [{ "name": "pausa-lee", "source": "./" }]
 }

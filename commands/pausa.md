@@ -1,40 +1,40 @@
 ---
-description: Escribe el handoff a disco antes de una pausa larga, para poder hacer /clear sin perder el hilo
-argument-hint: [nombre-del-archivo]
-allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/nombre-pausa.py:*), Bash(${CLAUDE_PLUGIN_ROOT}/scripts/poda-handoffs.py:*)
+description: Writes the handoff to disk before a long pause, so you can /clear without losing the thread
+argument-hint: [file-name]
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/pause-name.py:*), Bash(${CLAUDE_PLUGIN_ROOT}/scripts/prune-handoffs.py:*)
 ---
 
-NOMBRE PEDIDO: $ARGUMENTS
-NOMBRE POR CONVERSACIÓN: !`${CLAUDE_PLUGIN_ROOT}/scripts/nombre-pausa.py`
-PODA: !`${CLAUDE_PLUGIN_ROOT}/scripts/poda-handoffs.py --antes`
+REQUESTED NAME: $ARGUMENTS
+NAME FROM CONVERSATION: !`${CLAUDE_PLUGIN_ROOT}/scripts/pause-name.py`
+PRUNE: !`${CLAUDE_PLUGIN_ROOT}/scripts/prune-handoffs.py --before`
 
-Voy a hacer una pausa larga. Escribe el handoff donde ya viva este hilo: `NOMBRE POR CONVERSACIÓN` trae la ruta entera, con carpeta propia si el hilo la tiene (`OPTIMIZACION/…`) y sin ella si vive en la raíz del directorio de trabajo.
+I am about to take a long pause. Write the handoff where this thread already lives: `NAME FROM CONVERSATION` carries the whole path, with the thread's own folder if it has one (`OPTIMIZATION/…`) and without it if it lives at the root of the working directory.
 
-**Nombre del archivo.** Resuélvelo tú, sin preguntarme, con esta prioridad:
+**File name.** Resolve it yourself, without asking me, in this order:
 
-1. Si `NOMBRE PEDIDO` trae texto, ese manda: normalízalo (espacios → `-`, fuera `/` y `\`), añádele la fecha de hoy en `-AAAA-MM-DD` si no la trae ya, cierra con `.md` y escríbelo **en la carpeta que traiga `NOMBRE POR CONVERSACIÓN`**, de inmediato. El nombre pedido es un nombre, no una ruta: la carpeta no la eliges tú. No consultes nada más.
-   `DESCONOCIDO` **no es una carpeta**: es la señal de que no se pudo identificar la sesión. Si eso es lo que vino, escribe en el directorio de trabajo y no crees ninguna carpeta con ese nombre.
-2. Si `NOMBRE PEDIDO` viene vacío, usa `NOMBRE POR CONVERSACIÓN` tal cual, que ya viene normalizado y con su carpeta.
-3. Solo si además `NOMBRE POR CONVERSACIÓN` es `DESCONOCIDO`, elige tú un nombre corto sacado del tema del hilo, escríbelo en el directorio de trabajo y dime cuál elegiste **y que el hilo no se pudo identificar**: sin título no hay emparejamiento, así que la poda no hará nada y el próximo `/lee` no sabrá que este handoff es de este hilo. Para que lo sepa, la primera línea del archivo importa más que nunca.
+1. If `REQUESTED NAME` has text, it wins: normalize it (spaces → `-`, drop `/` and `\`), add today's date as `-YYYY-MM-DD` unless it already has one, end it in `.md` and write it **in the folder that `NAME FROM CONVERSATION` carries**, right away. The requested name is a name, not a path: you do not choose the folder. Check nothing else.
+   `UNKNOWN` **is not a folder**: it is the signal that the session could not be identified. If that is what came, write in the working directory and create no folder by that name.
+2. If `REQUESTED NAME` is empty, use `NAME FROM CONVERSATION` as is: it is already normalized and carries its folder.
+3. Only if `NAME FROM CONVERSATION` is also `UNKNOWN`, pick a short name from the thread's topic, write it in the working directory and tell me which one you chose **and that the thread could not be identified**: without a title there is no matching, so pruning will do nothing and the next `/lee` will not know this handoff belongs to this thread. For it to know, the file's first line matters more than ever.
 
-El nombre lleva la fecha, así que pausar el mismo día reescribe el archivo del día y pausar otro día crea uno nuevo. Si el archivo de hoy ya existe, reescríbelo entero con el estado actual. **No toques a mano ningún otro `.md` del directorio ni de sus subcarpetas**, y en particular no borres los de días anteriores: `/lee` los lista con su fecha para que el usuario elija cuál retomar, y de recortarlos se encarga la poda.
+The name carries the date, so pausing on the same day rewrites that day's file and pausing on another day creates a new one. If today's file already exists, rewrite it whole with the current state. **Do not touch any other `.md` in the directory or its subfolders by hand**, and in particular do not delete earlier days' files: `/lee` lists them with their date for the user to choose which to resume, and trimming them is pruning's job.
 
-**Primera línea del archivo.** Un `# ` con el título de la conversación, tal cual, aunque el nombre del archivo sea otro. `/lee` empareja el hilo por ahí cuando el nombre no lo delata: los handoffs viejos se llamaban todos `ESTADO.md` y solo su encabezado dice de qué van.
+**First line of the file.** A `# ` with the conversation's title, exactly, even if the file name is different. `/lee` matches the thread by it when the name does not give it away.
 
-Contenido, en este orden y sin relleno:
+Content, in this order and without filler:
 
-1. **Decidido** — las decisiones que ya no hay que volver a discutir, una línea cada una.
-2. **Tocado** — archivos modificados o creados, con ruta relativa y qué se les hizo.
-3. **A medias** — lo que quedó incompleto y en qué punto exacto se cortó.
-4. **Siguiente paso** — una sola frase imperativa. No una lista.
-5. **No repetir** — caminos ya descartados y por qué, para no volver a explorarlos.
+1. **Decided** — decisions that need not be discussed again, one line each.
+2. **Touched** — files modified or created, with their relative path and what was done to them.
+3. **In progress** — what was left incomplete and the exact point where it stopped.
+4. **Next step** — a single imperative sentence. Not a list.
+5. **Do not repeat** — paths already ruled out and why, so they are not explored again.
 
-Reglas:
+Rules:
 
-- Máximo ~2k tokens. Si no cabe, corta contexto histórico, nunca el siguiente paso.
-- Escribe números y rutas, no adjetivos. "el parser de XML falla con CDATA anidado en `src/ecf/parse.ts:88`", no "hay un problema con el parser".
-- Es un archivo para leer en frío mañana, sin esta conversación. Si una frase solo se entiende habiendo estado aquí, reescríbela.
+- About 2k tokens at most. If it does not fit, cut historical context, never the next step.
+- Write numbers and paths, not adjectives. "the XML parser fails on nested CDATA in `src/parse.ts:88`", not "there is a problem with the parser".
+- It is a file to be read cold tomorrow, without this conversation. If a sentence only makes sense having been here, rewrite it.
 
-**Poda.** Ya está hecha: es la línea `PODA` de arriba, que corrió antes de que escribieras. Dejó el handoff de hoy y uno anterior de este hilo, y el que escribas ahora completa los dos. No la ejecutes otra vez: tu única llamada es la que escribe el archivo.
+**Pruning.** It is already done: it is the `PRUNE` line above, which ran before you write. It left today's handoff and one earlier one of this thread, and the one you write now completes the two. Do not run it again: your only call is the one that writes the file.
 
-Al terminar, dime en una línea el nombre del archivo escrito y que ejecute `/clear`, y nada más.
+When done, tell me in one line the name of the file written and to run `/clear`, and nothing else.
